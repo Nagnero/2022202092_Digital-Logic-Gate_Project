@@ -75,10 +75,10 @@ void QM::step1() {
     }
 
 
-    bool repeat = true;
+    
     vector<string> column = sorted_v;
     // 재귀적으로 다음 column이 생기지 않을 때까지 반복
-    while (repeat) { 
+    while (1) { 
         char i = '0';
         int j = 0;
         vector<string> temp1, temp2;
@@ -100,7 +100,7 @@ void QM::step1() {
                     next_column.push_back(str);
 
                 for (int k = 0; k < temp1.size(); k++)
-                    if (!(temp1[k][this->bit + 1])) {
+                    if (!(temp1[k][this->bit + 1]) && find(prime.begin(), prime.end(), temp1[k]) == prime.end()) {
                         cout << temp1[k] << endl;
                         prime.push_back(temp1[k]);
                     }
@@ -115,7 +115,7 @@ void QM::step1() {
         // 재귀함수 탈출부
         if (next_column.size() == 0) {
             for (int k = 0; k < temp1.size(); k++)
-                if (!(temp1[k][this->bit + 1])) {
+                if (!(temp1[k][this->bit + 1]) && find(prime.begin(), prime.end(), temp1[k]) == prime.end()) {
                     cout << temp1[k] << endl;
                     prime.push_back(temp1[k]);
                 }
@@ -128,6 +128,8 @@ void QM::step1() {
 
 
     }
+
+    this->prime.erase(unique(this->prime.begin(), this->prime.end()), this->prime.end());
 }
 
 vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
@@ -162,8 +164,6 @@ vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
             }
         }
     }
-
-    return_v.erase(unique(return_v.begin(), return_v.end()), return_v.end());
 
     return return_v;
 }
