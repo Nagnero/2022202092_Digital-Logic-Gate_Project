@@ -8,29 +8,29 @@ using namespace std;
 
 class QM {
 private:
-    int bit;
+    int bit; // 몇비트인지 저장하는 변수
     // 문자열 첫번째는 minterm인지 don't care인지 판단
     // 이후 bit + 1번째 인덱스에 1의 갯수 저장
     vector<string> input_v;
     vector<string> minterm; // minterm 저장
     vector<string> prime; // Prime Implicant 저장
     vector<string> sorted_v; // 0이 아닌 문자의 갯수를 카운트하여 정렬한 벡터
-    int** covered;
-    int checked_minterm = 0;
-    vector<string> output;
+    int checked_minterm; // 재귀함수 탈출을 위한 인자. 몇가지 minterm에 대해 판단이 끝났는지 저장
+    vector<string> output; // 출력값 저장 벡터
 
 public:
-    QM() {}
-    ~QM() {
-
+    QM() { // 생성자에서 초기화. 벡터는 초기화 불필요
+        checked_minterm = 0;
     }
+    ~QM() {} // private에 동적할당한 인자 없으므로 소멸자 불필요
 
     void LoadData(const char* intput_path); // 생성자. 오픈 할 파일의 경로를 매개변수로 받음
-    void step1(); // 입력받은 값드로 Prime Implicant를 구하는 멤버함수
-    vector<string> compare(vector<string>& temp1, vector<string>& temp2);
-    void step2();
-    void step3(int** x_loc);
-    void saveEPI(const char* output_path);
+    void step1(); // 입력받은 값으로 Prime Implicant를 구하는 멤버함수
+    // 두 벡터를 비교하여 해밍 디스턴스가 1인 벡터를 반환하는 멤버함수
+    vector<string> compare(vector<string>& temp1, vector<string>& temp2); 
+    void step2(); // PI와 minterm 간에 겹치는 것 체크하는 멤버함수
+    void step3(int** x_loc); // 재귀함수로 PIM 구하는 함수
+    void saveEPI(const char* output_path); // 파일 출력및 트랜지스터 계산을 위한 함수
 };
 
 //  텍스트 파일에 저장된 값을 가져와서 벡터에 저장
@@ -178,14 +178,13 @@ vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
                         repeat = true;
                 }
 
-                if (repeat)
+                if (repeat) // 중복됐으면 다음 루프 진행
                     continue;
                 else
                     return_v.push_back(str); // 반환할 벡터에 해당 문자열 푸시
             }
         }
     }
-    //this->prime.erase(unique(this->prime.begin(), this->prime.end()), this->prime.end());
     
     // 삼중 반복문 탈출 후 비교한 값 반환
     return return_v;
@@ -198,42 +197,34 @@ void QM::step2() {
     for (int i = 0; i < this->prime.size(); i++)
         x_loc[i] = new int[this->minterm.size()];
 
-    // 0으로 초기화
+    // 동적배열 0으로 초기화
     for (int i = 0; i < this->prime.size(); i++)
         for (int j = 0; j < this->minterm.size(); j++)
             x_loc[i][j] = 0;
 
     for (int i = 0; i < this->prime.size(); i++) {
         for (int j = 0; j < this->minterm.size(); j++) {
-            bool covered = true; // pi가 minterm을 커버하는지 확인하는 기준
+            bool covered = true; // PI가 minterm을 커버하는지 확인하는 기준
 
             for (int k = 0; k < this->bit; k++) {
                 // prime에서 k번째가 '-'이면 항상 맞으므로 다음 루프
                 if (this->prime[i][k] == '-')
                     continue;
 
+                // prime과 minterm에서 같은 위치에 같은 문자가 없으면
                 if (prime[i][k] != minterm[j][k]) {
-                    covered = false;
-                    break;
-                }
-                else {
-                    continue;
+                    covered = false; // covered를 false로 바꾸고
+                    break; // 반복문 탈출
                 }
             }
+            // EPI이면 해당 위치 1 저장
             if (covered)
                 x_loc[i][j] = 1;
         }
     }
 
-    /*for (int i = 0; i < this->prime.size(); i++) {
-        for (int j = 0; j < this->minterm.size(); j++)
-            cout << x_loc[i][j] << " ";
-            cout << endl;
-    }*/
-
     // Essential Prime Implicant 저장 재귀 함수 호출
     step3(x_loc);
-
 
     // 동적할당 메모리 해제
     for (int i = 0; i < this->prime.size(); i++)
@@ -242,7 +233,6 @@ void QM::step2() {
 }
 
 void QM::step3(int** x_loc) {
-
     // 재귀함수 탈출부. minterm들이 모두 커버 되면 탈출
     if (this->minterm.size() == this->checked_minterm)
         return;
@@ -274,8 +264,8 @@ void QM::step3(int** x_loc) {
         }
     }
 
+    // 재귀함수 호출
     step3(x_loc);
-
 }
 
 // 파일에 
@@ -315,26 +305,27 @@ void QM::saveEPI(const char* output_path) {
     // OR gate 에 의한 트랜지스터 개수 추가
     OR = this->output.size();
     
-    transistor += ((INVERTER * 2) + (OR * 2 + 2));
+    transistor += ((INVERTER * 2) + (OR * 2 + 2)); // 트랜지스터 갯수 계산
 
-
-    for (string str : this->output) {
+    // EPI 파일 입력부
+    for (string str : this->output) 
         fout << str << endl;
-    }
 
+    // 트랜지스터 갯수 파일 출력부
     fout << endl << "Cost(# of transistors): " << transistor;
 }
 
 int main() {
-    const char* input_path = "input_minterm.txt";
-    const char* output_path = "result.txt";
-    QM* qm = new QM;
+    const char* input_path = "input_minterm.txt"; // 입력값이 저장된 파일명
+    const char* output_path = "result.txt"; // 출력값을 저장할 파일명
+    QM* qm = new QM; // QM 객체 동적할당
 
-    qm->LoadData(input_path);
+    qm->LoadData(input_path); // 파일로부터 데이터 읽어오기
     qm->step1();
     qm->step2();
     qm->saveEPI(output_path);
 
-    delete qm;
+    delete qm; // QM객체 동적할당 해제
+
     return 0;
 }
