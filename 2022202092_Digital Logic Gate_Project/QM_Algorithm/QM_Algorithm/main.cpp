@@ -25,27 +25,28 @@ public:
 
     }
 
-    void LoadData(const char* path); // 생성자. 오픈 할 파일의 경로를 매개변수로 받음
+    void LoadData(const char* intput_path); // 생성자. 오픈 할 파일의 경로를 매개변수로 받음
     void step1(); // 입력받은 값드로 Prime Implicant를 구하는 멤버함수
     vector<string> compare(vector<string>& temp1, vector<string>& temp2);
     void step2();
     void step3(int** x_loc);
+    void saveEPI(const char* output_path);
 };
 
 //  텍스트 파일에 저장된 값을 가져와서 벡터에 저장
-void QM::LoadData(const char* path) {
+void QM::LoadData(const char* input_path) {
     ifstream fin;
     string input;
 
-    fin.open(path);
+    fin.open(input_path);
 
     if (!fin.is_open()) { // 제대로 파일이 열렸는지 확인
         cout << "invaild file path";
         return;
     }
 
-    this->bit = fin.get() - '0';
     getline(fin, input); // 첫번째 줄 초기화
+    this->bit = stoi(input);
 
     // 한줄씩 받아와서 저장
     while (getline(fin, input)) {
@@ -83,6 +84,7 @@ void QM::step1() {
 
     // 정렬된 벡터를 임시로 column 벡터에 할당
     vector<string> column = sorted_v;
+    int index_prime = 0;
     // 재귀적으로 다음 column이 생기지 않을 때까지 반복
     while (1) {
         int i = 0; // for문을 위한 인자 선언
@@ -113,8 +115,11 @@ void QM::step1() {
                 for (int k = 0; k < temp1.size(); k++)
                     // compare함수에서 한번도 안쓰인 prime implicant인지
                     // 그리고 이미 prime implicant에 들어갔는지 판단 후
-                    if (temp1[k][this->bit + 1] != 'x' && find(prime.begin(), prime.end(), temp1[k]) == prime.end())
-                        this->prime.push_back(temp1[k].substr(0, this->bit)); // prime 벡터에 푸시
+                    if (temp1[k][this->bit + 1] != 'x') {
+                        if (find(prime.begin(), prime.end(), temp1[k]) == prime.end()) {
+                            this->prime.push_back(temp1[k].substr(0, this->bit)); // prime 벡터에 푸시
+                        }
+                    }
                     else // 아니면 다음 반복을 위해 추가한 x 삭제
                         temp1[k].erase(this->bit + 1); 
             }
@@ -125,8 +130,9 @@ void QM::step1() {
 
         // 반복문을 빠져나온 후 다시 한번 temp1의 요소가 prime implicant인지 판단 후
         for (int k = 0; k < temp1.size(); k++)
-            if (temp1[k][this->bit + 1] != 'x' && find(prime.begin(), prime.end(), temp1[k]) == prime.end())
-                prime.push_back(temp1[k].substr(0,this->bit)); // prime 벡터에 추가. temp1 재사용 안하므로 그대로 종료
+            if (temp1[k][this->bit + 1] != 'x')
+                if (find(prime.begin(), prime.end(), temp1[k]) == prime.end())
+                    prime.push_back(temp1[k].substr(0,this->bit)); // prime 벡터에 추가. temp1 재사용 안하므로 그대로 종료
 
         // 재귀함수 탈출부. 다음 판단할 열인 next_column이 없으면 무한반복문 탈출
         if (next_column.empty())            
@@ -135,9 +141,6 @@ void QM::step1() {
         // 반복문 탈출이 안되면 다음 열 판단을 위해 임시로 저장한 next_column을 column에 전달
         column = next_column;
     }
-
-    // 마지막으로 중복요소 제거 
-    this->prime.erase(unique(this->prime.begin(), this->prime.end()), this->prime.end());
 }
 
 // 해밍거리가 1인 두 묶음의 비교함수
@@ -172,11 +175,22 @@ vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
                
                 str.push_back(temp2[j][this->bit]); // 0이 아닌 수가 몇개인지 뒤에 추가
 
-                return_v.push_back(str); // 반환할 벡터에 해당 문자열 푸시
+                // 중복확인
+                bool repeat = false;
+                for (int l = 0; l < return_v.size(); l++) {
+                    if (return_v[l] == str)
+                        repeat = true;
+                }
+
+                if (repeat)
+                    continue;
+                else
+                    return_v.push_back(str); // 반환할 벡터에 해당 문자열 푸시
             }
         }
     }
-
+    //this->prime.erase(unique(this->prime.begin(), this->prime.end()), this->prime.end());
+    
     // 삼중 반복문 탈출 후 비교한 값 반환
     return return_v;
 }
@@ -268,14 +282,23 @@ void QM::step3(int** x_loc) {
 
 }
 
+// 파일에 
+void QM::saveEPI(const char* output_path) {
+
+    for (string str : this->output) {
+        cout << str << endl;
+    }
+}
+
 int main() {
-    const char* path = "input_minterm.txt";
+    const char* input_path = "input_minterm.txt";
+    const char* output_path = "result.txt";
     QM* qm = new QM;
 
-    qm->LoadData(path);
+    qm->LoadData(input_path);
     qm->step1();
     qm->step2();
-
+    qm->saveEPI(output_path);
 
     delete qm;
     return 0;
