@@ -115,11 +115,8 @@ void QM::step1() {
                 for (int k = 0; k < temp1.size(); k++)
                     // compare함수에서 한번도 안쓰인 prime implicant인지
                     // 그리고 이미 prime implicant에 들어갔는지 판단 후
-                    if (temp1[k][this->bit + 1] != 'x') {
-                        if (find(prime.begin(), prime.end(), temp1[k]) == prime.end()) {
-                            this->prime.push_back(temp1[k].substr(0, this->bit)); // prime 벡터에 푸시
-                        }
-                    }
+                    if (temp1[k][this->bit + 1] != 'x') // x가 뒤에 없으면                        
+                            this->prime.push_back(temp1[k].substr(0, this->bit)); // prime 벡터에 푸시                    
                     else // 아니면 다음 반복을 위해 추가한 x 삭제
                         temp1[k].erase(this->bit + 1); 
             }
@@ -130,9 +127,8 @@ void QM::step1() {
 
         // 반복문을 빠져나온 후 다시 한번 temp1의 요소가 prime implicant인지 판단 후
         for (int k = 0; k < temp1.size(); k++)
-            if (temp1[k][this->bit + 1] != 'x')
-                if (find(prime.begin(), prime.end(), temp1[k]) == prime.end())
-                    prime.push_back(temp1[k].substr(0,this->bit)); // prime 벡터에 추가. temp1 재사용 안하므로 그대로 종료
+            if (temp1[k][this->bit + 1] != 'x') // x가 뒤에 없으면              
+                prime.push_back(temp1[k].substr(0,this->bit)); // prime 벡터에 추가. temp1 재사용 안하므로 그대로 유지
 
         // 재귀함수 탈출부. 다음 판단할 열인 next_column이 없으면 무한반복문 탈출
         if (next_column.empty())            
@@ -284,10 +280,49 @@ void QM::step3(int** x_loc) {
 
 // 파일에 
 void QM::saveEPI(const char* output_path) {
+    ofstream fout;
+    int transistor = 0;
+    int AND = 0, OR = 0, INVERTER = 0;
+
+    fout.open(output_path);
+    
+    // invertor 개수 카운트
+    for (int i = 0; i < this->bit; i++) {
+        // 모든 EPI에서 해당 번째 요소 중 하나라도 0이 있으면
+        bool inverse = false;
+        for (int j = 0; j < this->output.size(); j++) {
+            if (this->output[j][i] == '0') {
+                inverse = true;
+                break;
+            }
+        }
+        // inverter 필요하다고 판단하여 트랜지스터 2개 증가
+        if (inverse) 
+            INVERTER++;        
+    }
+
+    // AND gate 갯수 카운팅
+    for (int i = 0; i < this->output.size(); i++) {
+        transistor += 2;
+        for (int j = 0; j < this->bit; j++) {
+            if (output[i][j] != '-') {
+                transistor += 2;
+                AND++;
+            }
+        }
+    }
+
+    // OR gate 에 의한 트랜지스터 개수 추가
+    OR = this->output.size();
+    
+    transistor += ((INVERTER * 2) + (OR * 2 + 2));
+
 
     for (string str : this->output) {
-        cout << str << endl;
+        fout << str << endl;
     }
+
+    fout << endl << "Cost(# of transistors): " << transistor;
 }
 
 int main() {
