@@ -16,6 +16,8 @@ private:
     vector<string> prime; // Prime Implicant 저장
     vector<string> sorted_v; // 0이 아닌 문자의 갯수를 카운트하여 정렬한 벡터
     int** covered;
+    int checked_minterm = 0;
+    vector<string> output;
 
 public:
     QM() {}
@@ -27,6 +29,7 @@ public:
     void step1(); // 입력받은 값드로 Prime Implicant를 구하는 멤버함수
     vector<string> compare(vector<string>& temp1, vector<string>& temp2);
     void step2();
+    void step3(int** x_loc);
 };
 
 //  텍스트 파일에 저장된 값을 가져와서 벡터에 저장
@@ -212,11 +215,56 @@ void QM::step2() {
         }
     }
 
+    /*for (int i = 0; i < this->prime.size(); i++) {
+        for (int j = 0; j < this->minterm.size(); j++)
+            cout << x_loc[i][j] << " ";
+            cout << endl;
+    }*/
+
+    // Essential Prime Implicant 저장 재귀 함수 호출
+    step3(x_loc);
+
 
     // 동적할당 메모리 해제
     for (int i = 0; i < this->prime.size(); i++)
         delete[] x_loc[i];
     delete[] x_loc;
+}
+
+void QM::step3(int** x_loc) {
+
+    // 재귀함수 탈출부. minterm들이 모두 커버 되면 탈출
+    if (this->minterm.size() == this->checked_minterm)
+        return;
+
+    // 각 행의 요소를 살피면서 minterm과 pi가 겹치는 수가 
+    int num_x = 0, index = -1;
+    for (int i = 0; i < this->prime.size(); i++) {
+        int temp_x = 0;
+        for (int j = 0; j < this->minterm.size(); j++) {            
+            if (x_loc[i][j] == 1)
+                temp_x++;
+        }
+        // minterm과 pi가 겹치는게 더 큰 줄을 찾으면
+        if (temp_x > num_x) {
+            num_x = temp_x; // num_x에 저장하고
+            index = i; // 해당 열도 저장
+        }
+    }
+
+    // 결과값에 겹치는게 제일 많은 pi 저장
+    this->output.push_back(prime[index]);
+    // minterm의 개수만큼 반복하며
+    for (int j = 0; j < this->minterm.size(); j++) {
+        // 겹치는 줄의 minterm은 모두 -1로 변경
+        if (x_loc[index][j] == 1) {        
+            this->checked_minterm++; // 재귀함수 탈출을 위한 변수 1 증가
+            for (int k = 0; k < this->prime.size(); k++)
+                x_loc[k][j] = -1;
+        }
+    }
+
+    step3(x_loc);
 
 }
 
