@@ -14,16 +14,19 @@ private:
     vector<string> input_v;
     vector<string> minterm; // minterm 저장
     vector<string> prime; // Prime Implicant 저장
-    vector<string> sorted_v;
+    vector<string> sorted_v; // 0이 아닌 문자의 갯수를 카운트하여 정렬한 벡터
+    int** covered;
 
 public:
     QM() {}
-    ~QM() {}
+    ~QM() {
+
+    }
 
     void LoadData(const char* path); // 생성자. 오픈 할 파일의 경로를 매개변수로 받음
-    void step1();
-    //vector<string> sort_vector(int len);
+    void step1(); // 입력받은 값드로 Prime Implicant를 구하는 멤버함수
     vector<string> compare(vector<string>& temp1, vector<string>& temp2);
+    void step2();
 };
 
 //  텍스트 파일에 저장된 값을 가져와서 벡터에 저장
@@ -52,6 +55,7 @@ void QM::LoadData(const char* path) {
     fin.close();
 }
 
+// 입력받은 값드로 Prime Implicant를 구하는 멤버함수
 void QM::step1() {
     int cnt = 0;
     int len = this->input_v.size();
@@ -174,14 +178,57 @@ vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
     return return_v;
 }
 
+// minterm과 PI간에 겹치는 것 판단
+void QM::step2() {
+    // 행과 열이 minterm과 prime implicant의 개수인 배열 동적 할당
+    int** x_loc = new int* [this->prime.size()];
+    for (int i = 0; i < this->prime.size(); i++)
+        x_loc[i] = new int[this->minterm.size()];
+
+    // 0으로 초기화
+    for (int i = 0; i < this->prime.size(); i++)
+        for (int j = 0; j < this->minterm.size(); j++)
+            x_loc[i][j] = 0;
+
+    for (int i = 0; i < this->prime.size(); i++) {
+        for (int j = 0; j < this->minterm.size(); j++) {
+            bool covered = true; // pi가 minterm을 커버하는지 확인하는 기준
+
+            for (int k = 0; k < this->bit; k++) {
+                // prime에서 k번째가 '-'이면 항상 맞으므로 다음 루프
+                if (this->prime[i][k] == '-')
+                    continue;
+
+                if (prime[i][k] != minterm[j][k]) {
+                    covered = false;
+                    break;
+                }
+                else {
+                    continue;
+                }
+            }
+            if (covered)
+                x_loc[i][j] = 1;
+        }
+    }
+
+
+    // 동적할당 메모리 해제
+    for (int i = 0; i < this->prime.size(); i++)
+        delete[] x_loc[i];
+    delete[] x_loc;
+
+}
+
 int main() {
     const char* path = "input_minterm.txt";
     QM* qm = new QM;
 
     qm->LoadData(path);
     qm->step1();
+    qm->step2();
 
 
-
+    delete qm;
     return 0;
 }
