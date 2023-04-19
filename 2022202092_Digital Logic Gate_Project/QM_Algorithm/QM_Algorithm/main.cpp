@@ -17,6 +17,7 @@ private:
     vector<string> sorted_v; // 0이 아닌 문자의 갯수를 카운트하여 정렬한 벡터
     int checked_minterm; // 재귀함수 탈출을 위한 인자. 몇가지 minterm에 대해 판단이 끝났는지 저장
     vector<string> output; // 출력값 저장 벡터
+    bool no_nextcol = true;
 
 public:
     QM() { // 생성자에서 초기화. 벡터는 초기화 불필요
@@ -93,8 +94,11 @@ void QM::step1() {
         vector<string> next_column; // 임시 벡터 선언
 
         // 0이 아닌 값의 개수를 기준으로 temp1에 저장
-        while (column[j].back() == i + '0')
+        while (column[j].back() == i + '0') {
             temp1.push_back(column[j++]);
+            if (j > column.size() - 1)
+                break;
+        }
 
         // column의 사이즈만큼 반복
         for (; j < column.size(); i++) {
@@ -158,13 +162,17 @@ vector<string> QM::compare(vector<string>& temp1, vector<string>& temp2) {
                 if (temp1[i][k] != temp2[j][k]) { // 같은 위치에 같은 문자가 있으면
                     cnt++; // cnt 증가 및
                     index = k; // index에 해당 인덱스 저장
+                    if (cnt > 1)
+                        break;
                 }
             }
 
             // 같은 문자가 하나만 있다면
             if (cnt == 1) {
-                temp1[i].push_back('x'); // 사용되었단 의미로 뒤에 x 추가
-                temp2[j].push_back('x'); // temp2도 마찬가지로 x 추가
+                if (!temp1[i][this->bit + 1])
+                    temp1[i].push_back('x'); // 사용되었단 의미로 뒤에 x 추가
+                if (!temp2[j][this->bit + 1])
+                    temp2[j].push_back('x'); // temp2도 마찬가지로 x 추가
                 string str = temp1[i].substr(0, index); // 문자열 처리를 위한 임시 문자열. index까지 저장 후
                 str.push_back('-'); // 동일한 문자가 있는 자리를 '-'로 표시 후 
                 str = str + (temp1[i].substr(index + 1, this->bit - index - 1)); // 남은 자리 채우기
@@ -218,13 +226,18 @@ void QM::step2() {
                 }
             }
             // EPI이면 해당 위치 1 저장
-            if (covered)
+            if (covered) {
                 x_loc[i][j] = 1;
+                this->no_nextcol = false;
+            }
         }
     }
 
     // Essential Prime Implicant 저장 재귀 함수 호출
-    step3(x_loc);
+    if (!(this->no_nextcol))
+        step3(x_loc);
+    else
+        this->output = this->prime;
 
     // 동적할당 메모리 해제
     for (int i = 0; i < this->prime.size(); i++)
