@@ -1,0 +1,20 @@
+module rca_40b (S, A, B, Cout, Cin);
+
+   input [39:0]   A, B;
+   input            Cin;
+   output[39:0]   S;
+   output         Cout;
+   
+   wire [40:0] C;
+
+   genvar i;
+   generate
+      for (i = 0; i < 40; i = i + 1) begin : RCA_GEN
+         assign C[i+1] = (A[i] & B[i]) | (A[i] & Cin) | (B[i] & Cin);
+         assign S[i] = A[i] ^ B[i] ^ Cin;
+      end
+   endgenerate
+
+   assign Cout = C[39];
+   
+endmodule
